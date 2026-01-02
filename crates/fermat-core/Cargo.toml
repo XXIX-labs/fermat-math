@@ -1,0 +1,15 @@
+[package]
+name        = "fermat-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "128-bit fixed-point arithmetic for Solana sBPF — no_std, zero dependencies"
+repository.workspace = true
+authors.workspace = true
+
+[features]
+default = []
+std     = []
+
+[dev-dependencies]
+proptest = "1"

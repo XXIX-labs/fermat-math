@@ -1,0 +1,20 @@
+[package]
+name        = "fermat-solana"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Solana/Anchor integration for fermat-core (Borsh, SPL tokens)"
+repository.workspace = true
+authors.workspace = true
+
+[dependencies]
+fermat-core = { workspace = true }
+borsh       = "0.10"
+
+[features]
+default = []
+anchor  = ["dep:anchor-lang"]
+
+[dependencies.anchor-lang]
+version  = "0.29"
+optional = true

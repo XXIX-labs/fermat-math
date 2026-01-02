@@ -1,0 +1,19 @@
+[workspace]
+resolver = "2"
+members  = [
+    "crates/fermat-core",
+    "crates/fermat-solana",
+    "programs/fermat-bench",
+    "programs/fermat-lending",
+]
+
+[workspace.package]
+version    = "0.1.0"
+edition    = "2021"
+license    = "MIT OR Apache-2.0"
+repository = "https://github.com/XXIX-labs/fermat-math"
+authors    = ["XXIX Labs <dev@xxix.io>"]
+
+[workspace.dependencies]
+fermat-core   = { path = "crates/fermat-core" }
+fermat-solana = { path = "crates/fermat-solana" }

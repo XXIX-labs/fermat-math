@@ -1,0 +1,17 @@
+[package]
+name        = "fermat-lending"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Reference lending protocol built on fermat-core for Solana sBPF"
+repository.workspace = true
+authors.workspace = true
+
+[lib]
+crate-type = ["cdylib", "lib"]
+
+[dependencies]
+fermat-core   = { workspace = true }
+fermat-solana = { workspace = true }
+anchor-lang   = "0.29"
+borsh         = "0.10"
