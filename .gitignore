@@ -1,0 +1,34 @@
+# ─── Rust ───
+/target
+**/*.rs.bk
+Cargo.lock
+
+# ─── Solana / Anchor ───
+.anchor
+test-ledger/
+*.so
+deploy/
+
+# ─── Frontend (deployed separately via Vercel) ───
+frontend/
+
+# ─── Node / npm ───
+node_modules/
+.npm
+*.log
+
+# ─── Environment / Secrets ───
+.env
+.env.local
+.env.*.local
+*.pem
+wallet.json
+id.json
+
+# ─── IDE ───
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
