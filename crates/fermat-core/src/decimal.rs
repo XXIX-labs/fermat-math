@@ -3,13 +3,18 @@
 use crate::error::ArithmeticError;
 
 /// Maximum allowed scale (decimal places). Fixed at 28 to stay within `i128` range.
+///
+/// At scale 28 the mantissa unit is `10^-28`, giving sub-yocto precision.
 pub const MAX_SCALE: u8 = 28;
 
 /// Conventional scale for USDC (6 decimal places).
 pub const USDC_SCALE: u8 = 6;
 
-/// Conventional scale for SOL (9 decimal places: lamports).
+/// Conventional scale for SOL lamports (9 decimal places).
 pub const SOL_SCALE: u8 = 9;
+
+/// Conventional scale for percentage values expressed as basis points (4 d.p.).
+pub const BPS_SCALE: u8 = 4;
 
 /// A 128-bit signed fixed-point decimal.
 ///
@@ -40,6 +45,15 @@ impl Decimal {
     /// Minimum representable value: `i128::MIN × 10^0`.
     pub const MIN: Self = Self { mantissa: i128::MIN, scale: 0 };
 
+    /// Negative one: `-1 × 10^0`.
+    pub const NEG_ONE: Self = Self { mantissa: -1, scale: 0 };
+
+    /// `100 × 10^0` — useful for percentage arithmetic.
+    pub const HUNDRED: Self = Self { mantissa: 100, scale: 0 };
+
+    /// `10_000 × 10^0` — basis-points denominator.
+    pub const TEN_THOUSAND: Self = Self { mantissa: 10_000, scale: 0 };
+
     /// Construct a `Decimal` from a raw mantissa and scale.
     ///
     /// Returns `Err(ArithmeticError::ScaleExceeded)` if `scale > MAX_SCALE`.
@@ -49,6 +63,16 @@ impl Decimal {
             return Err(ArithmeticError::ScaleExceeded);
         }
         Ok(Self { mantissa, scale })
+    }
+
+    /// Construct without validating scale. Caller must ensure `scale <= MAX_SCALE`.
+    ///
+    /// # Safety (logical)
+    /// This is not `unsafe` in the Rust sense, but violating the scale invariant
+    /// will cause incorrect arithmetic results. Prefer `Decimal::new`.
+    #[inline]
+    pub(crate) const fn new_unchecked(mantissa: i128, scale: u8) -> Self {
+        Self { mantissa, scale }
     }
 
     /// Returns the raw mantissa.
