@@ -37,6 +37,8 @@
 #![deny(missing_docs)]
 #![deny(clippy::all)]
 
+extern crate alloc;
+
 pub mod arithmetic;
 pub mod compare;
 pub mod convert;
