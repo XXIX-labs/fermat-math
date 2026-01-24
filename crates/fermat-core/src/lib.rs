@@ -50,3 +50,6 @@ pub mod rounding;
 pub use decimal::{Decimal, MAX_SCALE, SOL_SCALE, USDC_SCALE};
 pub use error::ArithmeticError;
 pub use rounding::RoundingMode;
+
+#[cfg(test)]
+mod tests_arithmetic;

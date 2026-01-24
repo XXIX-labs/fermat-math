@@ -167,52 +167,103 @@ impl U256 {
 
     /// 256-bit / 128-bit → `(quotient: u128, remainder: u128)`.
     ///
-    /// Returns `None` if `d == 0` or `self.hi >= d` (quotient exceeds u128).
+    /// Returns `None` if `d == 0` or `self.hi >= d` (quotient exceeds `u128`).
     ///
-    /// Uses a four-phase 64-bit long-division to stay within `u128` at every step.
+    /// ## Algorithm selection
+    ///
+    /// - **hi == 0**: simple 128-bit division (O(1)).
+    /// - **d ≤ u64::MAX**: four-phase 64-bit long-division (O(1), fast path for
+    ///   all realistic financial values where `d` is a token amount or scale factor).
+    /// - **d > u64::MAX**: binary long-division over 256 bits (O(256), always
+    ///   correct; rarely reached in DeFi contexts).
     pub fn checked_div(self, d: u128) -> Option<(u128, u128)> {
         if d == 0 {
             return None;
         }
+        // Fast path: numerator fits in 128 bits
         if self.hi == 0 {
             return Some((self.lo / d, self.lo % d));
         }
+        // Quotient overflow guard
         if self.hi >= d {
             return None;
         }
 
-        const HALF: u128 = 1u128 << 64;
-        const MASK: u128 = HALF - 1;
+        // ── Fast path: d fits in 64 bits ─────────────────────────────────────
+        // The four-phase algorithm computes (r * 2^64 + digit) / d in each phase.
+        // This is safe iff (r * 2^64) doesn't overflow u128, i.e., r < 2^64.
+        // Since r < d and d ≤ 2^64, r < 2^64. ✓
+        if d <= u64::MAX as u128 {
+            const HALF: u128 = 1u128 << 64;
+            const MASK: u128 = HALF - 1;
 
-        let hi_hi = self.hi >> 64;
-        let hi_lo = self.hi & MASK;
-        let lo_hi = self.lo >> 64;
-        let lo_lo = self.lo & MASK;
+            let hi_hi = self.hi >> 64;
+            let hi_lo = self.hi & MASK;
+            let lo_hi = self.lo >> 64;
+            let lo_lo = self.lo & MASK;
 
-        // Phase A
-        let r_a = hi_hi % d;
-        let q_a = hi_hi / d;
+            let r_a = hi_hi % d;
+            let q_a = hi_hi / d;
 
-        // Phase B
-        let n_b = r_a * HALF + hi_lo;
-        let q_b = n_b / d;
-        let r_b = n_b % d;
+            let n_b = r_a * HALF + hi_lo;
+            let q_b = n_b / d;
+            let r_b = n_b % d;
 
-        // Phase C
-        let n_c = r_b * HALF + lo_hi;
-        let q_c = n_c / d;
-        let r_c = n_c % d;
+            let n_c = r_b * HALF + lo_hi;
+            let q_c = n_c / d;
+            let r_c = n_c % d;
 
-        // Phase D
-        let n_d = r_c * HALF + lo_lo;
-        let q_d = n_d / d;
-        let r_d = n_d % d;
+            let n_d = r_c * HALF + lo_lo;
+            let q_d = n_d / d;
+            let r_d = n_d % d;
 
-        if q_a != 0 || q_b != 0 {
-            return None;
+            if q_a != 0 || q_b != 0 {
+                return None; // quotient > u128::MAX
+            }
+
+            return Some((q_c * HALF + q_d, r_d));
         }
 
-        Some((q_c * HALF + q_d, r_d))
+        // ── General case: d > 2^64, binary long-division ─────────────────────
+        //
+        // Processes all 256 bits of the numerator from MSB to LSB.
+        // Maintains invariant: r < d at the end of every iteration.
+        //
+        // When `r_hi` (the overflow bit from `r << 1`) is set, the actual
+        // remainder is `2^128 + r_new`, which is guaranteed to be ≥ d and
+        // < 2d (proved from r < d before shift). The wrapping subtraction
+        // `r_new.wrapping_sub(d)` correctly computes `2^128 + r_new - d`.
+        let mut q: u128 = 0;
+        let mut r: u128 = 0;
+
+        for i in (0..256_u32).rev() {
+            let bit: u128 = if i >= 128 {
+                (self.hi >> (i - 128)) & 1
+            } else {
+                (self.lo >> i) & 1
+            };
+
+            let r_hi = r >> 127; // top bit of r (will overflow into bit 128 after shift)
+            let r_new = (r << 1) | bit;
+
+            if r_hi == 1 {
+                // Actual value is 2^128 + r_new; it must be ≥ d (and < 2d).
+                // wrapping_sub gives (2^128 + r_new - d) mod 2^128 = correct result.
+                r = r_new.wrapping_sub(d);
+                if i < 128 {
+                    q |= 1u128 << i;
+                }
+            } else if r_new >= d {
+                r = r_new - d;
+                if i < 128 {
+                    q |= 1u128 << i;
+                }
+            } else {
+                r = r_new;
+            }
+        }
+
+        Some((q, r))
     }
 }
 
