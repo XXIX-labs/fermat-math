@@ -53,3 +53,5 @@ pub use rounding::RoundingMode;
 
 #[cfg(test)]
 mod tests_arithmetic;
+#[cfg(test)]
+mod tests_rounding;
