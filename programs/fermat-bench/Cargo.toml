@@ -11,5 +11,7 @@ authors.workspace = true
 crate-type = ["cdylib", "lib"]
 
 [dependencies]
-fermat-core = { workspace = true }
-anchor-lang = "0.29"
+fermat-core   = { workspace = true }
+fermat-solana = { workspace = true }
+borsh         = "0.10"
+anchor-lang   = "0.29"
