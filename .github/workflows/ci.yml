@@ -51,4 +51,4 @@ jobs:
       - name: Build fermat-core for sBPF target
         run: |
           cd crates/fermat-core
-          cargo +nightly build --target bpfel-unknown-none --release -Z build-std=core
+          cargo +nightly build --target bpfel-unknown-none --release -Z build-std=core,alloc

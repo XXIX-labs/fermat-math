@@ -4,6 +4,7 @@ version.workspace = true
 edition.workspace = true
 license.workspace = true
 description = "Solana/Anchor integration for fermat-core (Borsh, SPL tokens)"
+readme      = "README.md"
 repository.workspace = true
 authors.workspace = true
 

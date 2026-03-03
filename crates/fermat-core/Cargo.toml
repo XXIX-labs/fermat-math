@@ -4,6 +4,7 @@ version.workspace = true
 edition.workspace = true
 license.workspace = true
 description = "128-bit fixed-point arithmetic for Solana sBPF — no_std, zero dependencies"
+readme      = "README.md"
 repository.workspace = true
 authors.workspace = true
 
