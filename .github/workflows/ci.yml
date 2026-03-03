@@ -29,7 +29,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: clippy
-      - run: cargo clippy -p fermat-core --all-targets --all-features -- -D warnings
+      - run: cargo clippy -p fermat-core -p fermat-solana --all-targets --all-features -- -D warnings
 
   test:
     name: Test (host)
@@ -45,10 +45,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@nightly
         with:
-          targets: bpfel-unknown-none
+          components: rust-src
       - name: Build fermat-core for sBPF target
         run: |
           cd crates/fermat-core
-          cargo build --target bpfel-unknown-none --release
+          cargo +nightly build --target bpfel-unknown-none --release -Z build-std=core

@@ -108,7 +108,7 @@ fn mul_order_independence() {
 fn chained_interest_accrual_is_stable() {
     // Simulate 12 monthly interest accruals: index should end up near 1.05 for 5% APR.
     let mut index = d(1_000_000, 6); // 1.000000
-    // 5% APR / 12 months = 0.4167% per month = 0.004167
+                                     // 5% APR / 12 months = 0.4167% per month = 0.004167
     let monthly_rate = d(4_167, 6); // 0.004167
 
     for _ in 0..12 {

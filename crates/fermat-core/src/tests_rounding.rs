@@ -291,7 +291,6 @@ mod rounding_tests {
 
     #[test]
     fn token_amount_roundtrip_6dp() {
-        use crate::convert::*;
         let amount = 1_234_567u64;
         let dec = Decimal::from_token_amount(amount, 6).unwrap();
         let back = dec.to_token_amount(6, RoundingMode::HalfEven).unwrap();

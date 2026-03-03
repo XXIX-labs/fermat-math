@@ -211,9 +211,7 @@ mod arithmetic_tests {
     #[test]
     fn mul_div_basic() {
         // (10 * 3) / 5 = 6
-        let result = d(10, 0)
-            .checked_mul_div(d(3, 0), d(5, 0))
-            .unwrap();
+        let result = d(10, 0).checked_mul_div(d(3, 0), d(5, 0)).unwrap();
         assert_eq!(result, d(6, 0));
     }
 
@@ -274,7 +272,13 @@ mod arithmetic_tests {
     #[test]
     fn u256_one_times_max() {
         let r = U256::mul(1, u128::MAX);
-        assert_eq!(r, U256 { lo: u128::MAX, hi: 0 });
+        assert_eq!(
+            r,
+            U256 {
+                lo: u128::MAX,
+                hi: 0
+            }
+        );
     }
 
     #[test]

@@ -23,11 +23,7 @@ use crate::state::{Position, Reserve};
 ///
 /// Takes mutable account refs so the caller (lib.rs) owns the Context
 /// and the Anchor macro generates client account types at the crate root.
-pub fn handler(
-    reserve: &mut Reserve,
-    position: &mut Position,
-    amount: u64,
-) -> Result<()> {
+pub fn handler(reserve: &mut Reserve, position: &mut Position, amount: u64) -> Result<()> {
     require!(amount > 0, LendingError::ZeroAmount);
 
     require_keys_eq!(

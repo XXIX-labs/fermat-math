@@ -109,7 +109,10 @@ mod tests {
 
     #[test]
     fn zero_cmp() {
-        assert_eq!(Decimal::ZERO.cmp(&Decimal::ZERO), core::cmp::Ordering::Equal);
+        assert_eq!(
+            Decimal::ZERO.cmp(&Decimal::ZERO),
+            core::cmp::Ordering::Equal
+        );
         assert!(Decimal::ZERO < d(1, 0));
         assert!(Decimal::ZERO > d(-1, 0));
     }

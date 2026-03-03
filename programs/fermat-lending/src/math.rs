@@ -114,12 +114,7 @@ mod tests {
     #[test]
     fn one_year_five_percent() {
         // index = 1.0, rate = 5%, dt = 1 year → new_index = 1.05
-        let idx = accrue_interest(
-            d(1_000_000, 6),
-            d(50_000, 6),
-            d(1_000_000, 6),
-        )
-        .unwrap();
+        let idx = accrue_interest(d(1_000_000, 6), d(50_000, 6), d(1_000_000, 6)).unwrap();
         assert_eq!(idx.mantissa(), 1_050_000);
         assert_eq!(idx.scale(), 6);
     }

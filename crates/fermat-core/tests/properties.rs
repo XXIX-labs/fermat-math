@@ -21,7 +21,7 @@ use proptest::prelude::*;
 /// Generates a valid mantissa in a restricted range to avoid overflow in combined ops.
 fn arb_mantissa() -> impl Strategy<Value = i128> {
     // Use ±10^18 range — large enough to be interesting but safe for mul
-    (-1_000_000_000_000_000_000i128..=1_000_000_000_000_000_000i128)
+    -1_000_000_000_000_000_000i128..=1_000_000_000_000_000_000i128
 }
 
 fn arb_scale() -> impl Strategy<Value = u8> {
@@ -36,6 +36,8 @@ fn arb_decimal_same_scale(scale: u8) -> impl Strategy<Value = Decimal> {
     arb_mantissa().prop_map(move |m| Decimal::new(m, scale).unwrap())
 }
 
+/// Generates a non-zero Decimal for division tests.
+#[allow(dead_code)]
 fn arb_nonzero_decimal() -> impl Strategy<Value = Decimal> {
     (arb_mantissa(), arb_scale())
         .prop_map(|(m, s)| Decimal::new(m, s).unwrap())
@@ -181,7 +183,7 @@ proptest! {
     #[test]
     fn ord_antisymmetric(a in arb_decimal(), b in arb_decimal()) {
         if a < b {
-            prop_assert!(!(b < a));
+            prop_assert!(b >= a);
         }
     }
 }

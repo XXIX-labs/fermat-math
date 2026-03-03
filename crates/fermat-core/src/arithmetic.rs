@@ -56,7 +56,10 @@ pub(crate) const POW10: [i128; 29] = [
 /// Return `10^exp` as `i128` or `Err(ScaleExceeded)` if `exp > MAX_SCALE`.
 #[inline]
 pub(crate) fn pow10(exp: u8) -> Result<i128, ArithmeticError> {
-    POW10.get(exp as usize).copied().ok_or(ArithmeticError::ScaleExceeded)
+    POW10
+        .get(exp as usize)
+        .copied()
+        .ok_or(ArithmeticError::ScaleExceeded)
 }
 
 // ─── Scale alignment ─────────────────────────────────────────────────────────
@@ -66,10 +69,7 @@ pub(crate) fn pow10(exp: u8) -> Result<i128, ArithmeticError> {
 /// Returns `(a_mantissa, b_mantissa, common_scale)`.
 /// Fails with `Overflow` if multiplying to scale up overflows `i128`.
 #[inline]
-pub(crate) fn align_scales(
-    a: Decimal,
-    b: Decimal,
-) -> Result<(i128, i128, u8), ArithmeticError> {
+pub(crate) fn align_scales(a: Decimal, b: Decimal) -> Result<(i128, i128, u8), ArithmeticError> {
     use core::cmp::Ordering;
     match a.scale.cmp(&b.scale) {
         Ordering::Equal => Ok((a.mantissa, b.mantissa, a.scale)),
@@ -113,7 +113,11 @@ pub(crate) fn sign3(a: i128, b: i128, c: i128) -> Sign {
     let neg_b = b < 0;
     let neg_c = c < 0;
     let negative = (neg_a ^ neg_b) ^ neg_c;
-    if negative { Sign::Negative } else { Sign::Positive }
+    if negative {
+        Sign::Negative
+    } else {
+        Sign::Positive
+    }
 }
 
 // ─── 256-bit unsigned integer ─────────────────────────────────────────────────
@@ -133,6 +137,7 @@ pub(crate) struct U256 {
 }
 
 impl U256 {
+    #[cfg(test)]
     pub const ZERO: Self = Self { lo: 0, hi: 0 };
 
     /// Exact 128 × 128 → 256-bit multiplication using four 64-bit limbs.
@@ -330,7 +335,10 @@ impl Decimal {
     /// Fails with `Err(Overflow)` for `Decimal::MIN` (two's-complement has no
     /// positive counterpart for `i128::MIN`).
     pub fn checked_neg(self) -> Result<Decimal, ArithmeticError> {
-        let mantissa = self.mantissa.checked_neg().ok_or(ArithmeticError::Overflow)?;
+        let mantissa = self
+            .mantissa
+            .checked_neg()
+            .ok_or(ArithmeticError::Overflow)?;
         Decimal::new(mantissa, self.scale)
     }
 
@@ -364,18 +372,16 @@ impl Decimal {
         let c = denominator.mantissa.unsigned_abs();
 
         let product = U256::mul(a, b);
-        let (quotient_u128, _rem) =
-            product.checked_div(c).ok_or(ArithmeticError::Overflow)?;
+        let (quotient_u128, _rem) = product.checked_div(c).ok_or(ArithmeticError::Overflow)?;
 
-        let mantissa_abs =
-            i128::try_from(quotient_u128).map_err(|_| ArithmeticError::Overflow)?;
+        let mantissa_abs = i128::try_from(quotient_u128).map_err(|_| ArithmeticError::Overflow)?;
 
         let signed_mantissa = match sign {
             Sign::Zero => 0i128,
             Sign::Positive => mantissa_abs,
-            Sign::Negative => {
-                mantissa_abs.checked_neg().ok_or(ArithmeticError::Overflow)?
-            }
+            Sign::Negative => mantissa_abs
+                .checked_neg()
+                .ok_or(ArithmeticError::Overflow)?,
         };
 
         let num_scale = self.scale as i32 + numerator.scale as i32;

@@ -34,25 +34,46 @@ pub struct Decimal {
 
 impl Decimal {
     /// Additive identity: `0 × 10^0`.
-    pub const ZERO: Self = Self { mantissa: 0, scale: 0 };
+    pub const ZERO: Self = Self {
+        mantissa: 0,
+        scale: 0,
+    };
 
     /// Multiplicative identity: `1 × 10^0`.
-    pub const ONE: Self = Self { mantissa: 1, scale: 0 };
+    pub const ONE: Self = Self {
+        mantissa: 1,
+        scale: 0,
+    };
 
     /// Maximum representable value: `i128::MAX × 10^0`.
-    pub const MAX: Self = Self { mantissa: i128::MAX, scale: 0 };
+    pub const MAX: Self = Self {
+        mantissa: i128::MAX,
+        scale: 0,
+    };
 
     /// Minimum representable value: `i128::MIN × 10^0`.
-    pub const MIN: Self = Self { mantissa: i128::MIN, scale: 0 };
+    pub const MIN: Self = Self {
+        mantissa: i128::MIN,
+        scale: 0,
+    };
 
     /// Negative one: `-1 × 10^0`.
-    pub const NEG_ONE: Self = Self { mantissa: -1, scale: 0 };
+    pub const NEG_ONE: Self = Self {
+        mantissa: -1,
+        scale: 0,
+    };
 
     /// `100 × 10^0` — useful for percentage arithmetic.
-    pub const HUNDRED: Self = Self { mantissa: 100, scale: 0 };
+    pub const HUNDRED: Self = Self {
+        mantissa: 100,
+        scale: 0,
+    };
 
     /// `10_000 × 10^0` — basis-points denominator.
-    pub const TEN_THOUSAND: Self = Self { mantissa: 10_000, scale: 0 };
+    pub const TEN_THOUSAND: Self = Self {
+        mantissa: 10_000,
+        scale: 0,
+    };
 
     /// Construct a `Decimal` from a raw mantissa and scale.
     ///

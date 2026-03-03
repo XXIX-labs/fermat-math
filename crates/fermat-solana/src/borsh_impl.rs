@@ -47,10 +47,7 @@ impl BorshDeserialize for DecimalBorsh {
 
         let mantissa = i128::from_le_bytes(mantissa_bytes);
         let decimal = Decimal::new(mantissa, scale).map_err(|_: ArithmeticError| {
-            std::io::Error::new(
-                std::io::ErrorKind::InvalidData,
-                "invalid Decimal encoding",
-            )
+            std::io::Error::new(std::io::ErrorKind::InvalidData, "invalid Decimal encoding")
         })?;
 
         Ok(DecimalBorsh(decimal))

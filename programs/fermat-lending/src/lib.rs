@@ -91,9 +91,8 @@ pub mod fermat_lending {
             .map_err(|_| FermatLendingError::MathError)?;
         position.debt_amount = DecimalBorsh::zero_with_scale(mint_decimals)
             .map_err(|_| FermatLendingError::MathError)?;
-        position.entry_borrow_index = DecimalBorsh(
-            Decimal::new(1_000_000, 6).map_err(|_| FermatLendingError::MathError)?,
-        );
+        position.entry_borrow_index =
+            DecimalBorsh(Decimal::new(1_000_000, 6).map_err(|_| FermatLendingError::MathError)?);
         position.bump = bump;
         Ok(())
     }
@@ -116,7 +115,13 @@ pub mod fermat_lending {
     ) -> Result<()> {
         let reserve = &mut ctx.accounts.reserve;
         let position = &mut ctx.accounts.position;
-        instructions::withdraw::handler(reserve, position, amount, collateral_price_usd, debt_price_usd)
+        instructions::withdraw::handler(
+            reserve,
+            position,
+            amount,
+            collateral_price_usd,
+            debt_price_usd,
+        )
     }
 
     /// Borrow tokens against deposited collateral.
@@ -128,7 +133,13 @@ pub mod fermat_lending {
     ) -> Result<()> {
         let reserve = &mut ctx.accounts.reserve;
         let position = &mut ctx.accounts.position;
-        instructions::borrow::handler(reserve, position, amount, collateral_price_usd, borrow_price_usd)
+        instructions::borrow::handler(
+            reserve,
+            position,
+            amount,
+            collateral_price_usd,
+            borrow_price_usd,
+        )
     }
 
     /// Repay outstanding debt (with accrued interest).

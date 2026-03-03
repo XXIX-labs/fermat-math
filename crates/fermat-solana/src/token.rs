@@ -74,7 +74,11 @@ pub fn decimal_to_token_amount(
 ///
 /// # Errors
 /// Returns an error if rescaling overflows or if `mint_decimals > MAX_SCALE`.
-pub fn align_to_mint(value: Decimal, mint_decimals: u8, mode: RoundingMode) -> Result<Decimal, ArithmeticError> {
+pub fn align_to_mint(
+    value: Decimal,
+    mint_decimals: u8,
+    mode: RoundingMode,
+) -> Result<Decimal, ArithmeticError> {
     if value.scale() >= mint_decimals {
         value.round(mint_decimals, mode)
     } else {

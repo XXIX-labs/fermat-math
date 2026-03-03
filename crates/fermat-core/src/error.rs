@@ -21,11 +21,11 @@ pub enum ArithmeticError {
 impl core::fmt::Display for ArithmeticError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
-            ArithmeticError::Overflow      => f.write_str("arithmetic overflow"),
-            ArithmeticError::Underflow     => f.write_str("arithmetic underflow"),
+            ArithmeticError::Overflow => f.write_str("arithmetic overflow"),
+            ArithmeticError::Underflow => f.write_str("arithmetic underflow"),
             ArithmeticError::DivisionByZero => f.write_str("division by zero"),
             ArithmeticError::ScaleExceeded => f.write_str("scale exceeds maximum (28)"),
-            ArithmeticError::InvalidInput  => f.write_str("invalid input"),
+            ArithmeticError::InvalidInput => f.write_str("invalid input"),
         }
     }
 }

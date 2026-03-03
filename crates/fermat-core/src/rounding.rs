@@ -206,7 +206,10 @@ mod tests {
     #[test]
     fn round_toward_zero_positive() {
         // 1.9 → 1 (truncate)
-        assert_eq!(d(19, 1).round(0, RoundingMode::TowardZero).unwrap(), d(1, 0));
+        assert_eq!(
+            d(19, 1).round(0, RoundingMode::TowardZero).unwrap(),
+            d(1, 0)
+        );
     }
 
     #[test]
@@ -306,28 +309,19 @@ mod tests {
     #[test]
     fn round_half_even_round_to_even_up() {
         // 1.5 → nearest even = 2
-        assert_eq!(
-            d(15, 1).round(0, RoundingMode::HalfEven).unwrap(),
-            d(2, 0)
-        );
+        assert_eq!(d(15, 1).round(0, RoundingMode::HalfEven).unwrap(), d(2, 0));
     }
 
     #[test]
     fn round_half_even_round_to_even_down() {
         // 2.5 → nearest even = 2
-        assert_eq!(
-            d(25, 1).round(0, RoundingMode::HalfEven).unwrap(),
-            d(2, 0)
-        );
+        assert_eq!(d(25, 1).round(0, RoundingMode::HalfEven).unwrap(), d(2, 0));
     }
 
     #[test]
     fn round_half_even_past_midpoint() {
         // 1.6 → 2 (past midpoint)
-        assert_eq!(
-            d(16, 1).round(0, RoundingMode::HalfEven).unwrap(),
-            d(2, 0)
-        );
+        assert_eq!(d(16, 1).round(0, RoundingMode::HalfEven).unwrap(), d(2, 0));
     }
 
     #[test]

@@ -113,10 +113,10 @@ impl Decimal {
             return Err(ArithmeticError::InvalidInput);
         }
 
-        let (negative, rest) = if s.starts_with('-') {
-            (true, &s[1..])
-        } else if s.starts_with('+') {
-            (false, &s[1..])
+        let (negative, rest) = if let Some(stripped) = s.strip_prefix('-') {
+            (true, stripped)
+        } else if let Some(stripped) = s.strip_prefix('+') {
+            (false, stripped)
         } else {
             (false, s)
         };
