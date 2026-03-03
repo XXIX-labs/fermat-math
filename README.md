@@ -7,7 +7,29 @@ protocols. It eliminates floating-point risk, prevents intermediate-overflow bug
 Balancer/Mango incidents), and provides deterministic rounding for consensus-critical computations.
 
 [![CI](https://github.com/XXIX-labs/fermat-math/actions/workflows/ci.yml/badge.svg)](https://github.com/XXIX-labs/fermat-math/actions)
+[![crates.io](https://img.shields.io/crates/v/fermat-core.svg)](https://crates.io/crates/fermat-core)
+[![crates.io](https://img.shields.io/crates/v/fermat-solana.svg)](https://crates.io/crates/fermat-solana)
+[![docs.rs](https://docs.rs/fermat-core/badge.svg)](https://docs.rs/fermat-core)
 [![License: MIT OR Apache-2.0](https://img.shields.io/badge/License-MIT%20OR%20Apache--2.0-blue.svg)](LICENSE-MIT)
+
+---
+
+## Installation
+
+Add the crates to your `Cargo.toml`:
+
+```toml
+[dependencies]
+fermat-core = "0.1"            # Core arithmetic (no_std, zero deps)
+fermat-solana = "0.1"          # Borsh + SPL token helpers (optional)
+```
+
+Or install via the command line:
+
+```bash
+cargo add fermat-core
+cargo add fermat-solana          # if you need Solana/Anchor integration
+```
 
 ---
 
@@ -41,17 +63,38 @@ Decimal { mantissa: i128, scale: u8 /* 0..=28 */ }
 ```rust
 use fermat_core::{Decimal, RoundingMode};
 
-// 150.000000 USDC price
-let price = Decimal::new(150_000_000, 6)?;
-// 2.500000 USDC amount
-let amount = Decimal::new(2_500_000, 6)?;
+// Create decimals from raw mantissa + scale
+let price  = Decimal::new(150_000_000, 6)?;   // 150.000000
+let amount = Decimal::new(2_500_000, 6)?;      //   2.500000
 
-// Multiply — scale 6 + scale 6 = scale 12
-let total = price.checked_mul(amount)?;
+// Arithmetic — every operation returns Result (no panics)
+let total  = price.checked_mul(amount)?;        // scale 12
+let result = total.round(6, RoundingMode::HalfEven)?;  // 375.000000
 
-// Round to 6 dp using banker's rounding
-let result = total.round(6, RoundingMode::HalfEven)?;
-// result = 375.000000
+// Parse from string
+let rate = Decimal::from_str_exact("0.05")?;   // 5% annual rate
+
+// Overflow-safe compound operation: (a × b) / c via U256 intermediate
+let health = collateral.checked_mul_div(threshold, debt)?;
+```
+
+### On-chain (Anchor / Borsh)
+
+```rust
+use fermat_solana::{DecimalBorsh, DECIMAL_SPACE};
+use fermat_solana::token::{token_amount_to_decimal, decimal_to_token_amount};
+
+// SPL token amount → Decimal
+let price = token_amount_to_decimal(1_500_000u64, 6)?;  // 1.500000
+
+// Decimal → SPL token amount (round down for withdrawals)
+let raw = decimal_to_token_amount(price, 6, RoundingMode::Down)?;
+
+// Use in Anchor account structs — 17 bytes on-chain
+#[account]
+pub struct PriceOracle {
+    pub price: DecimalBorsh,       // 17 bytes, validates scale ≤ 28
+}
 ```
 
 ---
@@ -206,21 +249,30 @@ assert_eq!(raw, 1_500_000u64);
 ## Running Tests
 
 ```bash
-# Unit tests + property tests
-cargo test -p fermat-core
-
-# Solana integration helpers
-cargo test -p fermat-solana
-
-# Lending program math
-cargo test -p fermat-lending
-
-# Full workspace
+# Full workspace (215 tests)
 cargo test --workspace
+
+# Individual crates
+cargo test -p fermat-core       # 160 unit + 15 proptest + 10 determinism + 1 doc
+cargo test -p fermat-solana     # 19 unit + 2 doc
+cargo test -p fermat-lending    # 8 unit
 
 # sBPF compile check (requires bpfel-unknown-none target)
 cargo build --target bpfel-unknown-none -p fermat-core
 ```
+
+---
+
+## Links
+
+| Resource | URL |
+|---|---|
+| **fermat-core** on crates.io | [crates.io/crates/fermat-core](https://crates.io/crates/fermat-core) |
+| **fermat-solana** on crates.io | [crates.io/crates/fermat-solana](https://crates.io/crates/fermat-solana) |
+| API docs (fermat-core) | [docs.rs/fermat-core](https://docs.rs/fermat-core) |
+| API docs (fermat-solana) | [docs.rs/fermat-solana](https://docs.rs/fermat-solana) |
+| GitHub | [github.com/XXIX-labs/fermat-math](https://github.com/XXIX-labs/fermat-math) |
+| Website | [fermatmath.net](https://fermatmath.net) |
 
 ---
 
