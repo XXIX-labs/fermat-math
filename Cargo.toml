@@ -15,5 +15,5 @@ repository = "https://github.com/XXIX-labs/fermat-math"
 authors    = ["XXIX Labs <dev@xxix.io>"]
 
 [workspace.dependencies]
-fermat-core   = { path = "crates/fermat-core" }
+fermat-core   = { path = "crates/fermat-core", version = "0.1.0" }
 fermat-solana = { path = "crates/fermat-solana" }
