@@ -77,6 +77,77 @@ pub fn scale_debt(
     principal.checked_mul_div(current_index, entry_index)
 }
 
+// ─── Interest Rate Model ───────────────────────────────────────────────────────
+
+/// Compute the current utilisation rate: `total_borrowed / total_deposited`.
+///
+/// Returns `Decimal::ZERO` when `total_deposited` is zero (empty reserve).
+/// Result is rounded to 6 decimal places.
+pub fn utilisation_rate(
+    total_borrowed: Decimal,
+    total_deposited: Decimal,
+) -> Result<Decimal, ArithmeticError> {
+    if total_deposited.is_zero() {
+        return Ok(Decimal::ZERO);
+    }
+    let util = total_borrowed.checked_div(total_deposited)?;
+    util.round(6, RoundingMode::HalfEven)
+}
+
+/// Kinked two-slope borrow rate model.
+///
+/// ```text
+/// if util ≤ optimal:
+///     rate = base + slope1 × (util / optimal)
+/// else:
+///     excess = util − optimal
+///     rate = base + slope1 + slope2 × (excess / (1 − optimal))
+/// ```
+///
+/// All inputs and the return value are 6 dp fractions (e.g. `0.05 = 5% APR`).
+///
+/// # Errors
+/// - `DivisionByZero` if `optimal == 0` or `optimal == 1` (degenerate model).
+/// - Propagates overflow errors from underlying arithmetic.
+pub fn kinked_borrow_rate(
+    utilisation: Decimal,
+    base: Decimal,
+    slope1: Decimal,
+    slope2: Decimal,
+    optimal: Decimal,
+) -> Result<Decimal, ArithmeticError> {
+    if optimal.is_zero() {
+        return Err(ArithmeticError::DivisionByZero);
+    }
+    let one = Decimal::ONE;
+    let remaining = one.checked_sub(optimal)?;
+    if remaining.is_zero() {
+        return Err(ArithmeticError::DivisionByZero);
+    }
+
+    let rate = if utilisation <= optimal {
+        // base + slope1 × (util / optimal)
+        let ratio = utilisation
+            .checked_div(optimal)?
+            .round(6, RoundingMode::HalfEven)?;
+        let term = slope1
+            .checked_mul(ratio)?
+            .round(6, RoundingMode::HalfEven)?;
+        base.checked_add(term)?
+    } else {
+        // base + slope1 + slope2 × ((util − optimal) / (1 − optimal))
+        let excess = utilisation.checked_sub(optimal)?;
+        let ratio = excess
+            .checked_div(remaining)?
+            .round(6, RoundingMode::HalfEven)?;
+        let term = slope2
+            .checked_mul(ratio)?
+            .round(6, RoundingMode::HalfEven)?;
+        base.checked_add(slope1)?.checked_add(term)?
+    };
+    rate.round(6, RoundingMode::HalfEven)
+}
+
 // ─── Tests ────────────────────────────────────────────────────────────────────
 
 #[cfg(test)]
@@ -134,5 +205,89 @@ mod tests {
         // principal = $100, entry = 1.0, current = 1.05 → scaled = $105
         let scaled = scale_debt(d(100_000_000, 6), d(1_050_000, 6), d(1_000_000, 6)).unwrap();
         assert_eq!(scaled.to_i128_truncated(), 105);
+    }
+
+    // ── Utilisation Rate ──────────────────────────────────────────────────────
+
+    #[test]
+    fn utilisation_empty_reserve_is_zero() {
+        let u = utilisation_rate(Decimal::ZERO, Decimal::ZERO).unwrap();
+        assert!(u.is_zero());
+    }
+
+    #[test]
+    fn utilisation_fifty_percent() {
+        // borrowed = 50, deposited = 100 → 0.50
+        let u = utilisation_rate(d(50_000_000, 6), d(100_000_000, 6)).unwrap();
+        assert_eq!(u, d(500_000, 6));
+    }
+
+    #[test]
+    fn utilisation_eighty_percent() {
+        let u = utilisation_rate(d(80_000_000, 6), d(100_000_000, 6)).unwrap();
+        assert_eq!(u, d(800_000, 6));
+    }
+
+    // ── Kinked Borrow Rate ────────────────────────────────────────────────────
+
+    // Model params: base=2%, slope1=4%, slope2=50%, optimal=80%
+    fn base() -> Decimal {
+        d(20_000, 6)
+    } // 0.02
+    fn slope1() -> Decimal {
+        d(40_000, 6)
+    } // 0.04
+    fn slope2() -> Decimal {
+        d(500_000, 6)
+    } // 0.50
+    fn optimal() -> Decimal {
+        d(800_000, 6)
+    } // 0.80
+
+    #[test]
+    fn kinked_rate_at_zero_util() {
+        // util=0 → rate = base + 0 = 2%
+        let rate =
+            kinked_borrow_rate(Decimal::ZERO, base(), slope1(), slope2(), optimal()).unwrap();
+        assert_eq!(rate, d(20_000, 6));
+    }
+
+    #[test]
+    fn kinked_rate_at_optimal_util() {
+        // util=optimal=0.80 → rate = base + slope1 = 2% + 4% = 6%
+        let rate = kinked_borrow_rate(optimal(), base(), slope1(), slope2(), optimal()).unwrap();
+        assert_eq!(rate, d(60_000, 6));
+    }
+
+    #[test]
+    fn kinked_rate_above_optimal() {
+        // util=0.90, excess=0.10, remaining=0.20
+        // rate = 6% + 50% × (0.10/0.20) = 6% + 25% = 31%
+        let u = d(900_000, 6); // 0.90
+        let rate = kinked_borrow_rate(u, base(), slope1(), slope2(), optimal()).unwrap();
+        assert_eq!(rate, d(310_000, 6));
+    }
+
+    #[test]
+    fn kinked_rate_at_full_util() {
+        // util=1.0, excess=0.20, remaining=0.20
+        // rate = 6% + 50% × (0.20/0.20) = 6% + 50% = 56%
+        let u = d(1_000_000, 6); // 1.0
+        let rate = kinked_borrow_rate(u, base(), slope1(), slope2(), optimal()).unwrap();
+        assert_eq!(rate, d(560_000, 6));
+    }
+
+    #[test]
+    fn kinked_rate_degenerate_optimal_zero_errors() {
+        assert!(
+            kinked_borrow_rate(Decimal::ZERO, base(), slope1(), slope2(), Decimal::ZERO).is_err()
+        );
+    }
+
+    #[test]
+    fn kinked_rate_degenerate_optimal_one_errors() {
+        assert!(
+            kinked_borrow_rate(Decimal::ZERO, base(), slope1(), slope2(), d(1_000_000, 6)).is_err()
+        );
     }
 }
