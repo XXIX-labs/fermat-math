@@ -13,7 +13,9 @@ use crate::state::{Position, Reserve};
 
 /// Borrow `amount` raw token units from `reserve`.
 ///
-/// Oracle prices passed as `DecimalBorsh` (Borsh-serialisable, 6 dp).
+/// `price_usd` is the on-chain Pyth price (6 dp USD) for this reserve's token.
+/// Collateral and debt are the same token in this single-asset design, so one
+/// price is sufficient for the health factor check.
 ///
 /// # Validation
 /// - `amount > 0`
@@ -22,8 +24,7 @@ pub fn handler(
     reserve: &mut Reserve,
     position: &mut Position,
     amount: u64,
-    collateral_price_usd: DecimalBorsh,
-    borrow_price_usd: DecimalBorsh,
+    price_usd: Decimal,
 ) -> Result<()> {
     require!(amount > 0, LendingError::ZeroAmount);
 
@@ -39,10 +40,10 @@ pub fn handler(
     let coll_usd = position
         .collateral_amount
         .0
-        .checked_mul(collateral_price_usd.0)
+        .checked_mul(price_usd)
         .map_err(|_| LendingError::MathError)?;
     let debt_usd = new_debt
-        .checked_mul(borrow_price_usd.0)
+        .checked_mul(price_usd)
         .map_err(|_| LendingError::MathError)?;
     let hf = health_factor(coll_usd, reserve.liquidation_threshold.0, debt_usd)
         .map_err(|_| LendingError::MathError)?;

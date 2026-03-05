@@ -26,9 +26,10 @@ use crate::state::{Position, Reserve};
 /// Liquidate up to `repay_amount` of debt in `position`.
 ///
 /// # Parameters
-/// - `repay_amount`        — raw token units the liquidator repays (capped at debt).
-/// - `collateral_price_usd` — oracle price of the collateral token (6 dp USD).
-/// - `debt_price_usd`      — oracle price of the debt token (6 dp USD).
+/// - `repay_amount` — raw token units the liquidator repays (capped at debt).
+/// - `price_usd`   — on-chain Pyth price (6 dp USD) for this reserve's token.
+///                   Collateral and debt are the same token in this single-asset
+///                   design, so one price covers both sides of the formula.
 ///
 /// # Validation
 /// - `repay_amount > 0`
@@ -37,8 +38,7 @@ pub fn handler(
     reserve: &mut Reserve,
     position: &mut Position,
     repay_amount: u64,
-    collateral_price_usd: DecimalBorsh,
-    debt_price_usd: DecimalBorsh,
+    price_usd: Decimal,
 ) -> Result<()> {
     require!(repay_amount > 0, LendingError::ZeroAmount);
 
@@ -59,10 +59,10 @@ pub fn handler(
     let coll_usd = position
         .collateral_amount
         .0
-        .checked_mul(collateral_price_usd.0)
+        .checked_mul(price_usd)
         .map_err(|_| LendingError::MathError)?;
     let debt_usd = current_debt
-        .checked_mul(debt_price_usd.0)
+        .checked_mul(price_usd)
         .map_err(|_| LendingError::MathError)?;
     let hf = health_factor(coll_usd, reserve.liquidation_threshold.0, debt_usd)
         .map_err(|_| LendingError::MathError)?;
@@ -82,13 +82,14 @@ pub fn handler(
         .checked_add(reserve.liquidation_bonus.0)
         .map_err(|_| LendingError::MathError)?;
     let repay_usd = repay_dec
-        .checked_mul(debt_price_usd.0)
+        .checked_mul(price_usd)
         .map_err(|_| LendingError::MathError)?;
     let seize_usd = repay_usd
         .checked_mul(bonus_factor)
         .map_err(|_| LendingError::MathError)?;
+    // collateral_price == debt_price (same token), so seize_usd / price_usd = repay × bonus_factor.
     let collateral_seized = seize_usd
-        .checked_div(collateral_price_usd.0)
+        .checked_div(price_usd)
         .map_err(|_| LendingError::MathError)?;
 
     // Round down — protocol never overpays the liquidator.

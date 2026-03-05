@@ -39,6 +39,7 @@ use fermat_solana::DecimalBorsh;
 
 pub mod instructions;
 pub mod math;
+pub mod oracle;
 pub mod state;
 
 use instructions::LendingError;
@@ -64,9 +65,10 @@ pub mod fermat_lending {
 
     // ── Reserve initialisation ────────────────────────────────────────────────
 
-    /// Add a token reserve with a kinked interest rate model.
+    /// Add a token reserve with a kinked interest rate model and a Pyth price feed.
     ///
-    /// # Rate model parameters
+    /// # Parameters
+    /// - `price_feed`       — Pyth price feed account pubkey for this token (stored on reserve).
     /// - `base_borrow_rate` — rate at 0% utilisation (e.g. 0.02 = 2%).
     /// - `rate_slope1`      — additional rate at `optimal_utilisation` (e.g. 0.04).
     /// - `rate_slope2`      — rate slope above the kink (e.g. 0.50 = 50%).
@@ -74,6 +76,7 @@ pub mod fermat_lending {
     pub fn init_reserve(
         ctx: Context<InitReserve>,
         mint_decimals: u8,
+        price_feed: Pubkey,
         liquidation_threshold: DecimalBorsh,
         liquidation_bonus: DecimalBorsh,
         optimal_utilisation: DecimalBorsh,
@@ -101,6 +104,7 @@ pub mod fermat_lending {
         reserve.base_borrow_rate = base_borrow_rate;
         reserve.rate_slope1 = rate_slope1;
         reserve.rate_slope2 = rate_slope2;
+        reserve.price_feed = price_feed;
         reserve.bump = bump;
         Ok(())
     }
@@ -133,37 +137,27 @@ pub mod fermat_lending {
         )
     }
 
-    pub fn withdraw(
-        ctx: Context<WithdrawAccounts>,
-        amount: u64,
-        collateral_price_usd: DecimalBorsh,
-        debt_price_usd: DecimalBorsh,
-    ) -> Result<()> {
+    pub fn withdraw(ctx: Context<WithdrawAccounts>, amount: u64) -> Result<()> {
         require!(!ctx.accounts.market.paused, LendingError::MarketPaused);
         require!(!ctx.accounts.reserve.paused, LendingError::ReservePaused);
+        let price = oracle::get_validated_price(&ctx.accounts.price_feed, &Clock::get()?)?;
         instructions::withdraw::handler(
             &mut ctx.accounts.reserve,
             &mut ctx.accounts.position,
             amount,
-            collateral_price_usd,
-            debt_price_usd,
+            price,
         )
     }
 
-    pub fn borrow_funds(
-        ctx: Context<BorrowAccounts>,
-        amount: u64,
-        collateral_price_usd: DecimalBorsh,
-        borrow_price_usd: DecimalBorsh,
-    ) -> Result<()> {
+    pub fn borrow_funds(ctx: Context<BorrowAccounts>, amount: u64) -> Result<()> {
         require!(!ctx.accounts.market.paused, LendingError::MarketPaused);
         require!(!ctx.accounts.reserve.paused, LendingError::ReservePaused);
+        let price = oracle::get_validated_price(&ctx.accounts.price_feed, &Clock::get()?)?;
         instructions::borrow::handler(
             &mut ctx.accounts.reserve,
             &mut ctx.accounts.position,
             amount,
-            collateral_price_usd,
-            borrow_price_usd,
+            price,
         )
     }
 
@@ -180,20 +174,16 @@ pub mod fermat_lending {
     /// Liquidate an undercollateralised position.
     ///
     /// Anyone may call this when the position's health factor < 1.0.
-    pub fn liquidate(
-        ctx: Context<LiquidateAccounts>,
-        repay_amount: u64,
-        collateral_price_usd: DecimalBorsh,
-        debt_price_usd: DecimalBorsh,
-    ) -> Result<()> {
+    /// The Pyth price feed is read on-chain; no price is passed as an instruction parameter.
+    pub fn liquidate(ctx: Context<LiquidateAccounts>, repay_amount: u64) -> Result<()> {
         require!(!ctx.accounts.market.paused, LendingError::MarketPaused);
         require!(!ctx.accounts.reserve.paused, LendingError::ReservePaused);
+        let price = oracle::get_validated_price(&ctx.accounts.price_feed, &Clock::get()?)?;
         instructions::liquidate::handler(
             &mut ctx.accounts.reserve,
             &mut ctx.accounts.position,
             repay_amount,
-            collateral_price_usd,
-            debt_price_usd,
+            price,
         )
     }
 
@@ -366,6 +356,12 @@ pub struct WithdrawAccounts<'info> {
     pub market: Account<'info, Market>,
 
     pub owner: Signer<'info>,
+
+    /// CHECK: Pyth price feed for the reserve token.
+    /// The account key is verified against `reserve.price_feed` and the
+    /// feed is validated (staleness + confidence) inside `oracle::get_validated_price`.
+    #[account(address = reserve.price_feed)]
+    pub price_feed: AccountInfo<'info>,
 }
 
 #[derive(Accounts)]
@@ -379,6 +375,12 @@ pub struct BorrowAccounts<'info> {
     pub market: Account<'info, Market>,
 
     pub owner: Signer<'info>,
+
+    /// CHECK: Pyth price feed for the reserve token.
+    /// The account key is verified against `reserve.price_feed` and the
+    /// feed is validated (staleness + confidence) inside `oracle::get_validated_price`.
+    #[account(address = reserve.price_feed)]
+    pub price_feed: AccountInfo<'info>,
 }
 
 #[derive(Accounts)]
@@ -406,6 +408,12 @@ pub struct LiquidateAccounts<'info> {
     pub market: Account<'info, Market>,
 
     pub liquidator: Signer<'info>,
+
+    /// CHECK: Pyth price feed for the reserve token.
+    /// The account key is verified against `reserve.price_feed` and the
+    /// feed is validated (staleness + confidence) inside `oracle::get_validated_price`.
+    #[account(address = reserve.price_feed)]
+    pub price_feed: AccountInfo<'info>,
 }
 
 #[derive(Accounts)]

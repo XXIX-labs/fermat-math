@@ -11,7 +11,8 @@ authors.workspace = true
 crate-type = ["cdylib", "lib"]
 
 [dependencies]
-fermat-core   = { workspace = true }
-fermat-solana = { workspace = true }
-anchor-lang   = "0.29"
-borsh         = "0.10"
+fermat-core         = { workspace = true }
+fermat-solana       = { workspace = true }
+anchor-lang         = "0.29"
+borsh               = "0.10"
+pyth-sdk-solana     = "0.10"

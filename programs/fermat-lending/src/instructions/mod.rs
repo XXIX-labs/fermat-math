@@ -35,4 +35,10 @@ pub enum LendingError {
     ReservePaused,
     #[msg("Parameter out of allowed range")]
     InvalidParameter,
+    #[msg("Price account is not a valid Pyth feed or price is non-positive")]
+    OracleError,
+    #[msg("Pyth price is older than the maximum allowed age (60 s)")]
+    StaleOraclePrice,
+    #[msg("Pyth confidence interval exceeds 2% of price — market too illiquid")]
+    OracleConfidenceTooWide,
 }

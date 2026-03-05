@@ -26,9 +26,9 @@ pub const MARKET_SPACE: usize = 8 + 32 + 17 + 17 + 1 + 1;
 /// + liquidation_threshold (17) + cumulative_borrow_index (17)
 /// + paused (1) + liquidation_bonus (17)
 /// + optimal_utilisation (17) + base_borrow_rate (17)
-/// + rate_slope1 (17) + rate_slope2 (17) + bump (1) = 245 bytes.
+/// + rate_slope1 (17) + rate_slope2 (17) + price_feed (32) + bump (1) = 277 bytes.
 pub const RESERVE_SPACE: usize =
-    8 + 32 + 32 + 1 + 17 + 17 + 17 + 17 + 17 + 1 + 17 + 17 + 17 + 17 + 17 + 1;
+    8 + 32 + 32 + 1 + 17 + 17 + 17 + 17 + 17 + 1 + 17 + 17 + 17 + 17 + 17 + 32 + 1;
 
 /// Discriminator (8) + market (32) + owner (32) + collateral_amount (17)
 /// + debt_amount (17) + entry_borrow_index (17) + bump (1) = 124 bytes.
@@ -119,6 +119,9 @@ pub struct Reserve {
 
     /// Rate slope above the kink (e.g. 0.50 = 50% additional at 100% util, 6 dp).
     pub rate_slope2: DecimalBorsh,
+
+    /// Pyth price feed account for this token (validated on-chain during HF checks).
+    pub price_feed: Pubkey,
 
     /// PDA bump.
     pub bump: u8,
