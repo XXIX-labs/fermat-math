@@ -7,8 +7,11 @@
 //! ```
 //!
 //! A position is healthy when `health_factor >= 1.0`. We round **down**
-//! (conservative for the liquidator) using `checked_mul_div` with U256
-//! intermediate to prevent overflow on large positions.
+//! (toward −∞) so the reported health factor is always ≤ the true value —
+//! this makes the protocol conservative: a position can only be liquidated
+//! when it is truly undercollateralised, never due to rounding up. Uses
+//! `checked_mul_div` with a U256 intermediate to prevent overflow on large
+//! positions.
 //!
 //! ## Interest Accrual
 //!
@@ -25,7 +28,8 @@ use fermat_core::{ArithmeticError, Decimal, RoundingMode};
 /// Returns `Err(DivisionByZero)` when debt is zero (caller treats as healthy).
 ///
 /// Uses `checked_mul_div` (256-bit intermediate) and `RoundingMode::Down`
-/// so the protocol is always conservative about position safety.
+/// so the reported health factor never exceeds the true value — a position
+/// is only eligible for liquidation when it is genuinely undercollateralised.
 pub fn health_factor(
     collateral_usd: Decimal,
     liquidation_threshold: Decimal,

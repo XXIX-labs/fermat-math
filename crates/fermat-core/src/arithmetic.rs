@@ -323,11 +323,13 @@ impl Decimal {
         let mantissa = scaled_num
             .checked_div(rhs.mantissa)
             .ok_or(ArithmeticError::Overflow)?;
+        // raw_scale = self.scale + extra - rhs.scale
+        //           = self.scale + (MAX_SCALE - self.scale) - rhs.scale
+        //           = MAX_SCALE - rhs.scale
+        // Since rhs.scale ∈ [0, MAX_SCALE], raw_scale ∈ [0, MAX_SCALE]. Always valid.
         let raw_scale = (self.scale as i32) + (extra as i32) - (rhs.scale as i32);
-        if raw_scale < 0 {
-            return Err(ArithmeticError::Underflow);
-        }
-        Decimal::new(mantissa, (raw_scale as u8).min(MAX_SCALE))
+        debug_assert!(raw_scale >= 0 && raw_scale <= MAX_SCALE as i32);
+        Decimal::new(mantissa, raw_scale as u8)
     }
 
     /// Negation: returns `-self`.

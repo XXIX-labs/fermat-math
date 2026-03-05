@@ -193,7 +193,7 @@ mod rounding_tests {
 
     #[test]
     fn half_up_at_mid_negative() {
-        // -1.5 → -2 (HalfUp goes toward +∞, but for negatives that means toward -∞)
+        // -1.5 → -2 (HalfUp rounds away from zero for both positive and negative)
         assert_eq!(r(-15, 1, 0, RoundingMode::HalfUp), -2);
     }
 
@@ -228,8 +228,14 @@ mod rounding_tests {
 
     #[test]
     fn half_down_at_mid_negative() {
-        // -1.5 → -1 (round toward zero at midpoint for HalfDown)
+        // -1.5 → -1 (HalfDown rounds toward zero: the half-integer is dropped toward 0)
         assert_eq!(r(-15, 1, 0, RoundingMode::HalfDown), -1);
+    }
+
+    #[test]
+    fn half_down_at_mid_negative_small() {
+        // -0.5 → 0 (HalfDown rounds toward zero)
+        assert_eq!(r(-5, 1, 0, RoundingMode::HalfDown), 0);
     }
 
     #[test]

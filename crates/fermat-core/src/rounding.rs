@@ -4,12 +4,12 @@
 //!
 //! | Mode          | Description                                    | DeFi Use Case              |
 //! |---------------|------------------------------------------------|----------------------------|
-//! | `Down`        | Toward −∞                                      | User withdrawals (safe)    |
-//! | `Up`          | Toward +∞                                      | Protocol fees (maximize)   |
+//! | `Down`        | Toward −∞ (floor)                              | User withdrawals (safe)    |
+//! | `Up`          | Toward +∞ (ceiling)                            | Protocol fees (maximize)   |
 //! | `TowardZero`  | Truncate (toward 0)                            | Display / read-only        |
 //! | `AwayFromZero`| Away from 0 (magnify)                          | Collateral requirements    |
-//! | `HalfUp`      | Round half toward +∞ ("school" rounding)       | Retail calculations        |
-//! | `HalfDown`    | Round half toward −∞                           | Interest accrual           |
+//! | `HalfUp`      | Round half away from zero ("school" rounding)  | Retail calculations        |
+//! | `HalfDown`    | Round half toward zero                         | Interest accrual           |
 //! | `HalfEven`    | Round half to even digit (banker's rounding)   | Statistical neutrality (default) |
 
 use crate::arithmetic::pow10;
@@ -39,14 +39,14 @@ pub enum RoundingMode {
     /// `-1.1` → `-2`, `1.1` → `2`
     AwayFromZero,
 
-    /// Round half toward positive infinity ("school" rounding).
+    /// Round half away from zero ("school" rounding).
     ///
-    /// `0.5` → `1`, `-0.5` → `0`
+    /// `0.5` → `1`, `-0.5` → `-1`
     HalfUp,
 
-    /// Round half toward negative infinity.
+    /// Round half toward zero.
     ///
-    /// `0.5` → `0`, `-0.5` → `-1`
+    /// `0.5` → `0`, `-0.5` → `0`
     HalfDown,
 
     /// Round half to nearest even digit (banker's rounding) — **default**.
@@ -288,7 +288,7 @@ mod tests {
 
     #[test]
     fn round_half_up_negative_midpoint() {
-        // -0.5 rounds to -1 (away from 0 in HalfUp)
+        // -0.5 rounds to -1 (HalfUp is away-from-zero)
         assert_eq!(d(-5, 1).round(0, RoundingMode::HalfUp).unwrap(), d(-1, 0));
     }
 
